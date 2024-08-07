@@ -54,7 +54,7 @@ func TestHandleDeleteObject(t *testing.T) {
 			is.NoErr(err)
 
 			rr := httptest.NewRecorder()
-			handler := s3manager.HandleDeleteObject(s3)
+			handler := s3manager.HandleDeleteObject(s3, map[string]string{})
 
 			handler.ServeHTTP(rr, req)
 

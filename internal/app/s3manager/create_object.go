@@ -12,9 +12,16 @@ import (
 )
 
 // HandleCreateObject uploads a new object.
-func HandleCreateObject(s3 S3, sseInfo SSEType) http.HandlerFunc {
+func HandleCreateObject(s3 S3, sseInfo SSEType, bucketMap map[string]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		bucketName := mux.Vars(r)["bucketName"]
+		bucketGuid := mux.Vars(r)["bucketGuid"]
+		bucketName := ""
+		if val, ok := bucketMap[bucketGuid]; ok {
+			bucketName = val
+		} else {
+			handleHTTPUnauthorizedError(w, fmt.Errorf("bucket not found"))
+			return
+		}
 
 		err := r.ParseMultipartForm(32 << 20) // 32 Mb
 		if err != nil {

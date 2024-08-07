@@ -9,9 +9,16 @@ import (
 )
 
 // HandleDeleteObject deletes an object.
-func HandleDeleteObject(s3 S3) http.HandlerFunc {
+func HandleDeleteObject(s3 S3, bucketMap map[string]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		bucketName := mux.Vars(r)["bucketName"]
+		bucketGuid := mux.Vars(r)["bucketGuid"]
+		bucketName := ""
+		if val, ok := bucketMap[bucketGuid]; ok {
+			bucketName = val
+		} else {
+			handleHTTPUnauthorizedError(w, fmt.Errorf("bucket not found"))
+			return
+		}
 		objectName := mux.Vars(r)["objectName"]
 
 		err := s3.RemoveObject(r.Context(), bucketName, objectName, minio.RemoveObjectOptions{})

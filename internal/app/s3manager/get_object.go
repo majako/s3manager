@@ -10,9 +10,16 @@ import (
 )
 
 // HandleGetObject downloads an object to the client.
-func HandleGetObject(s3 S3, forceDownload bool) http.HandlerFunc {
+func HandleGetObject(s3 S3, forceDownload bool, bucketMap map[string]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		bucketName := mux.Vars(r)["bucketName"]
+		bucketGuid := mux.Vars(r)["bucketGuid"]
+		bucketName := ""
+		if val, ok := bucketMap[bucketGuid]; ok {
+			bucketName = val
+		} else {
+			handleHTTPUnauthorizedError(w, fmt.Errorf("bucket not found"))
+			return
+		}
 		objectName := mux.Vars(r)["objectName"]
 
 		object, err := s3.GetObject(r.Context(), bucketName, objectName, minio.GetObjectOptions{})

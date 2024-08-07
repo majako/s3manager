@@ -10,7 +10,7 @@ import (
 )
 
 // HandleBucketsView renders all buckets on an HTML page.
-func HandleBucketsView(s3 S3, templates fs.FS, allowDelete bool) http.HandlerFunc {
+func HandleBucketsView(s3 S3, templates fs.FS, bucketName string, allowDelete bool) http.HandlerFunc {
 	type pageData struct {
 		Buckets     []minio.BucketInfo
 		AllowDelete bool
@@ -22,6 +22,8 @@ func HandleBucketsView(s3 S3, templates fs.FS, allowDelete bool) http.HandlerFun
 			handleHTTPError(w, fmt.Errorf("error listing buckets: %w", err))
 			return
 		}
+
+		buckets = filterBuckets(buckets, bucketName)
 
 		data := pageData{
 			Buckets:     buckets,
@@ -39,4 +41,15 @@ func HandleBucketsView(s3 S3, templates fs.FS, allowDelete bool) http.HandlerFun
 			return
 		}
 	}
+}
+
+func filterBuckets(buckets []minio.BucketInfo, bucketName string) []minio.BucketInfo {
+	var filteredBuckets []minio.BucketInfo
+	for _, bucket := range buckets {
+		if bucket.Name != bucketName {
+			continue
+		}
+		filteredBuckets = append(filteredBuckets, bucket)
+	}
+	return filteredBuckets
 }

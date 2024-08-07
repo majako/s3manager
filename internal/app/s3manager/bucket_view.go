@@ -14,7 +14,7 @@ import (
 )
 
 // HandleBucketView shows the details page of a bucket.
-func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bool) http.HandlerFunc {
+func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bool, bucketMap map[string]string) http.HandlerFunc {
 	type objectWithIcon struct {
 		Key          string
 		Size         int64
@@ -26,6 +26,7 @@ func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bo
 	}
 
 	type pageData struct {
+		BucketGuid  string
 		BucketName  string
 		Objects     []objectWithIcon
 		AllowDelete bool
@@ -36,8 +37,16 @@ func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bo
 	return func(w http.ResponseWriter, r *http.Request) {
 		regex := regexp.MustCompile(`\/buckets\/([^\/]*)\/?(.*)`)
 		matches := regex.FindStringSubmatch(r.RequestURI)
-		bucketName := matches[1]
+		bucketGuid := matches[1]
 		path := matches[2]
+
+		bucketName := ""
+		if val, ok := bucketMap[bucketGuid]; ok {
+			bucketName = val
+		} else {
+			handleHTTPUnauthorizedError(w, fmt.Errorf("bucket not found"))
+			return
+		}
 
 		var objs []objectWithIcon
 		doneCh := make(chan struct{})
@@ -65,6 +74,7 @@ func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bo
 			objs = append(objs, obj)
 		}
 		data := pageData{
+			BucketGuid:  bucketGuid,
 			BucketName:  bucketName,
 			Objects:     objs,
 			AllowDelete: allowDelete,

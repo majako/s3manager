@@ -41,12 +41,22 @@ type configuration struct {
 	Timeout             int32
 	SseType             string
 	SseKey              string
+	BucketMap           map[string]string
 }
 
 func parseConfiguration() configuration {
 	var accessKeyID, secretAccessKey, iamEndpoint string
 
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+
 	viper.AutomaticEnv()
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		fmt.Printf("Error reading config file, %s", err)
+	}
 
 	viper.SetDefault("ENDPOINT", "s3.amazonaws.com")
 	endpoint := viper.GetString("ENDPOINT")
@@ -98,6 +108,9 @@ func parseConfiguration() configuration {
 	viper.SetDefault("SSE_KEY", "")
 	sseKey := viper.GetString("SSE_KEY")
 
+	viper.SetDefault("BUCKET_MAP", "{}")
+	bucketMap := viper.GetStringMapString("BUCKET_MAP")
+
 	return configuration{
 		Endpoint:            endpoint,
 		UseIam:              useIam,
@@ -115,6 +128,7 @@ func parseConfiguration() configuration {
 		Timeout:             timeout,
 		SseType:             sseType,
 		SseKey:              sseKey,
+		BucketMap:           bucketMap,
 	}
 }
 
@@ -175,17 +189,17 @@ func main() {
 	r := mux.NewRouter()
 	r.Handle("/", http.RedirectHandler("/buckets", http.StatusPermanentRedirect)).Methods(http.MethodGet)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.FS(statics)))).Methods(http.MethodGet)
-	r.Handle("/buckets", s3manager.HandleBucketsView(s3, templates, configuration.AllowDelete)).Methods(http.MethodGet)
-	r.PathPrefix("/buckets/").Handler(s3manager.HandleBucketView(s3, templates, configuration.AllowDelete, configuration.ListRecursive)).Methods(http.MethodGet)
-	r.Handle("/api/buckets", s3manager.HandleCreateBucket(s3)).Methods(http.MethodPost)
+	// r.Handle("/buckets", s3manager.HandleBucketsView(s3, templates, configuration.BucketName, configuration.AllowDelete)).Methods(http.MethodGet)
+	// r.Handle("/api/buckets", s3manager.HandleCreateBucket(s3)).Methods(http.MethodPost)
+	// if configuration.AllowDelete {
+	// 	r.Handle("/api/buckets/{bucketName}", s3manager.HandleDeleteBucket(s3)).Methods(http.MethodDelete)
+	// }
+	r.PathPrefix("/buckets/").Handler(s3manager.HandleBucketView(s3, templates, configuration.AllowDelete, configuration.ListRecursive, configuration.BucketMap)).Methods(http.MethodGet)
+	r.Handle("/api/buckets/{bucketGuid}/objects", s3manager.HandleCreateObject(s3, sseType, configuration.BucketMap)).Methods(http.MethodPost)
+	r.Handle("/api/buckets/{bucketGuid}/objects/{objectName:.*}/url", s3manager.HandleGenerateUrl(s3, configuration.BucketMap)).Methods(http.MethodGet)
+	r.Handle("/api/buckets/{bucketGuid}/objects/{objectName:.*}", s3manager.HandleGetObject(s3, configuration.ForceDownload, configuration.BucketMap)).Methods(http.MethodGet)
 	if configuration.AllowDelete {
-		r.Handle("/api/buckets/{bucketName}", s3manager.HandleDeleteBucket(s3)).Methods(http.MethodDelete)
-	}
-	r.Handle("/api/buckets/{bucketName}/objects", s3manager.HandleCreateObject(s3, sseType)).Methods(http.MethodPost)
-	r.Handle("/api/buckets/{bucketName}/objects/{objectName:.*}/url", s3manager.HandleGenerateUrl(s3)).Methods(http.MethodGet)
-	r.Handle("/api/buckets/{bucketName}/objects/{objectName:.*}", s3manager.HandleGetObject(s3, configuration.ForceDownload)).Methods(http.MethodGet)
-	if configuration.AllowDelete {
-		r.Handle("/api/buckets/{bucketName}/objects/{objectName:.*}", s3manager.HandleDeleteObject(s3)).Methods(http.MethodDelete)
+		r.Handle("/api/buckets/{bucketGuid}/objects/{objectName:.*}", s3manager.HandleDeleteObject(s3, configuration.BucketMap)).Methods(http.MethodDelete)
 	}
 
 	lr := logging.Handler(os.Stdout)(r)

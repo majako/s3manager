@@ -13,7 +13,7 @@
 
 <nav class="nav-extended">
     <div class="nav-wrapper container">
-        <a href="/buckets/{{$.BucketName}}" class="brand-logo center"><i class="material-icons">folder_open</i>{{ .BucketName }}</a>
+        <a href="#" class="brand-logo center"><i class="material-icons">folder_open</i>{{ .BucketName }}</a>
         {{ if not .Objects }}
         <ul class="right">
             <li>
@@ -26,8 +26,7 @@
     </div>
 
     <div class="nav-wrapper container">
-        <a href="/buckets" class="breadcrumb"><i class="material-icons">arrow_back</i> buckets </a>
-        {{ $url := printf "/buckets/%s/" $.BucketName }}
+        {{ $url := printf "/buckets/%s/" $.BucketGuid }}
         <a href="{{ $url }}" class="breadcrumb">{{ $.BucketName }}</a>
 
         {{ range $index, $path := .Paths }}
@@ -56,7 +55,7 @@
             <tr>
                 <td
                     {{ if $object.IsFolder }}
-                    onclick="location.href='/buckets/{{ $.BucketName }}/{{ $object.Key }}'"}
+                    onclick="location.href='/buckets/{{ $.BucketGuid }}/{{ $object.Key }}'"}
                     style="cursor:pointer;"
                     {{ end }}>
                     <i class="material-icons">{{ $object.Icon }}</i> {{ $object.DisplayName }}
@@ -71,10 +70,10 @@
                         </button>
                         <!-- Dropdown Structure -->
                         <ul id="actions-dropdown-{{ $index }}" class="dropdown-content">
-                            <li><a target="_blank" href="/api/buckets/{{ $.BucketName }}/objects/{{ $object.Key }}">Download</a></li>
+                            <li><a target="_blank" href="/api/buckets/{{ $.BucketGuid }}/objects/{{ $object.Key }}">Download</a></li>
                             <li><a onclick="handleOpenDownloadLinkModal({{ $object.Key }})">Download link</a></li>
                             {{- if $.AllowDelete }}
-                            <li><a href="#" onclick="deleteObject({{ $.BucketName }}, {{ $object.Key }})">Delete</a></li>
+                            <li><a href="#" onclick="deleteObject({{ $.BucketGuid }}, {{ $object.Key }})">Delete</a></li>
                             {{- end }}
                         </ul>
                     {{ end }}
@@ -189,25 +188,25 @@
 </div>
 
 <script>
-function deleteObject(bucketName, objectName) {
+function deleteObject(bucketGuid, objectName) {
     $.ajax({
         type: 'DELETE',
-        url: '/api/buckets/' + bucketName + '/objects/' + objectName,
+        url: '/api/buckets/' + bucketGuid + '/objects/' + objectName,
         success: function () { location.reload(); }
     })
 }
 
-function deleteBucket(bucketName) {
+function deleteBucket(bucketGuid) {
     $.ajax({
         type: 'DELETE',
-        url: '/api/buckets/' + bucketName,
+        url: '/api/buckets/' + bucketGuid,
         success: function () { window.location.replace('/buckets'); }
     })
 }
 
 function handleUploadFiles(event) {
     files = event.target.files
-    url = "/api/buckets/{{ .BucketName }}/objects"
+    url = "/api/buckets/{{ .BucketGuid }}/objects"
     uploadFiles(files, url);
 }
 
@@ -299,7 +298,7 @@ function handleGenerateDownloadLink(event) {
 
     $.ajax({
         type: 'GET',
-        url: '/api/buckets/' + {{ $.BucketName }}+ "/objects/" + objectName + "/url?expiry=" + expiryTime,
+        url: '/api/buckets/' + {{ $.BucketGuid }}+ "/objects/" + objectName + "/url?expiry=" + expiryTime,
         success: function (result) {
             genUrlMessage.innerHTML = "";
             document.getElementById("generated-link").setAttribute('value', JSON.parse(result).url);

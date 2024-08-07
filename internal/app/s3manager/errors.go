@@ -19,6 +19,16 @@ const (
 func handleHTTPError(w http.ResponseWriter, err error) {
 	code := http.StatusInternalServerError
 
+	handleBasedHTTPError(w, err, code)
+}
+
+func handleHTTPUnauthorizedError(w http.ResponseWriter, err error) {
+	code := http.StatusUnauthorized
+
+	handleBasedHTTPError(w, err, code)
+}
+
+func handleBasedHTTPError(w http.ResponseWriter, err error, code int) {
 	var se *json.SyntaxError
 	ok := errors.As(err, &se)
 	if ok {
