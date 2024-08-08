@@ -1,0 +1,42 @@
+name: Deploy to Majako Cloud
+
+on:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+
+jobs:
+  deploy-to-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.BUILD_READ_PAT }}
+
+    - name: DigitalOcean - doctl install
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITAL_OCEAN_PAT }}
+        
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag ${{ secrets.REGISTRY_NAME }}/s3manager:$(echo $GITHUB_SHA | head -c7)
+  
+    - name: Log in to DigitalOcean Container Registry
+      run: doctl registry login --expiry-seconds 600
+      
+    - name: Push image to DigitalOcean Container Registry
+      run: docker push ${{ secrets.REGISTRY_NAME }}/s3manager:$(echo $GITHUB_SHA | head -c7)
+        
+    - name: Update deployment file container
+      run: TAG=$(echo $GITHUB_SHA | head -c7) && sed -i 's|<TAG>|'${TAG}'|' $GITHUB_WORKSPACE/config/majako-cloud.yaml
+
+    - name: Save DigitalOcean kubeconfig with short-lived credentials
+      run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.CLUSTER_NAME }}
+
+    - name: Deploy to DigitalOcean Kubernetes
+      run: kubectl apply -f $GITHUB_WORKSPACE/config/majako-cloud.yaml
+
+    - name: Verify deployment
+      run: kubectl rollout status statefulset/s3manager -n majako-services
