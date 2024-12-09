@@ -40,7 +40,12 @@ func HandleCreateObject(s3 S3, sseInfo SSEType, bucketMap map[string]string) htt
 			}
 		}(file)
 
-		opts := minio.PutObjectOptions{ContentType: "application/octet-stream"}
+		opts := minio.PutObjectOptions{
+		    ContentType: "application/octet-stream",
+		    UserMetadata: map[string]string{
+		        "x-amz-acl": "public-read", // Makes the object publicly readable
+		    },
+		}
 
 		if sseInfo.Type == "KMS" {
 			opts.ServerSideEncryption, _ = encrypt.NewSSEKMS(sseInfo.Key, nil)
