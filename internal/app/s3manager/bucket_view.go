@@ -14,7 +14,7 @@ import (
 )
 
 // HandleBucketView shows the details page of a bucket.
-func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bool, bucketMap map[string]string) http.HandlerFunc {
+func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bool, bucketMap map[string]string, cdnMap map[string]string) http.HandlerFunc {
 	type objectWithIcon struct {
 		Key          string
 		Size         int64
@@ -32,6 +32,7 @@ func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bo
 		AllowDelete bool
 		Paths       []string
 		CurrentPath string
+		CdnUrl		string
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -46,6 +47,11 @@ func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bo
 		} else {
 			handleHTTPUnauthorizedError(w, fmt.Errorf("bucket not found"))
 			return
+		}
+
+		cdnUrl := ""
+		if val, ok := cdnMap[bucketName]; ok {
+			cdnUrl = val
 		}
 
 		var objs []objectWithIcon
@@ -80,6 +86,7 @@ func HandleBucketView(s3 S3, templates fs.FS, allowDelete bool, listRecursive bo
 			AllowDelete: allowDelete,
 			Paths:       removeEmptyStrings(strings.Split(path, "/")),
 			CurrentPath: path,
+			CdnUrl: cdnUrl,
 		}
 
 		t, err := template.ParseFS(templates, "layout.html.tmpl", "bucket.html.tmpl")

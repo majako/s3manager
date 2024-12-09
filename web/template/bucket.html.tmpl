@@ -70,8 +70,11 @@
                         </button>
                         <!-- Dropdown Structure -->
                         <ul id="actions-dropdown-{{ $index }}" class="dropdown-content">
+                            <!--
                             <li><a target="_blank" href="/api/buckets/{{ $.BucketGuid }}/objects/{{ $object.Key }}">Download</a></li>
                             <li><a onclick="handleOpenDownloadLinkModal({{ $object.Key }})">Download link</a></li>
+                            -->
+                            <li><a onclick="handleCopyCdnUrl({{ $object.Key }}); return false;">Copy public CDN link</a></li>
                             {{- if $.AllowDelete }}
                             <li><a href="#" onclick="deleteObject({{ $.BucketGuid }}, {{ $object.Key }})">Delete</a></li>
                             {{- end }}
@@ -273,12 +276,22 @@ function createNotification(fileName) {
 function handleOpenDownloadLinkModal(objectName) {
     const downloadLinkForm = document.forms['download-link-form']
     downloadLinkForm.elements['objectName'].value = objectName;
-    
+
     const createLinkModalElement = document.getElementById('modal-create-download-link')
     document.getElementById('generated-link').setAttribute('value', "");
     document.getElementById('gen-url-error').innerHTML = "";
     const modalInstance = M.Modal.init(createLinkModalElement);
     modalInstance.open()
+}
+
+async function handleCopyCdnUrl(objectKey) {
+    const cdnUrl = '{{ $.CdnUrl }}' + '/' + objectKey;
+    try {
+        navigator.clipboard.writeText(cdnUrl);
+        alert(cdnUrl + ' copied to clipboard.');
+    } catch (err) {
+        alert('Failed to copy url to clipboard: ' + cdnUrl);
+    }
 }
 
 function handleGenerateDownloadLink(event) {

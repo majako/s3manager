@@ -42,6 +42,7 @@ type configuration struct {
 	SseType             string
 	SseKey              string
 	BucketMap           map[string]string
+	CdnMap           	map[string]string
 }
 
 func parseConfiguration() configuration {
@@ -111,6 +112,9 @@ func parseConfiguration() configuration {
 	viper.SetDefault("BUCKET_MAP", "{}")
 	bucketMap := viper.GetStringMapString("BUCKET_MAP")
 
+	viper.SetDefault("CDN_MAP", "{}")
+	cdnMap := viper.GetStringMapString("CDN_MAP")
+
 	return configuration{
 		Endpoint:            endpoint,
 		UseIam:              useIam,
@@ -129,6 +133,7 @@ func parseConfiguration() configuration {
 		SseType:             sseType,
 		SseKey:              sseKey,
 		BucketMap:           bucketMap,
+		CdnMap:           	 cdnMap,
 	}
 }
 
@@ -194,7 +199,7 @@ func main() {
 	// if configuration.AllowDelete {
 	// 	r.Handle("/api/buckets/{bucketName}", s3manager.HandleDeleteBucket(s3)).Methods(http.MethodDelete)
 	// }
-	r.PathPrefix("/buckets/").Handler(s3manager.HandleBucketView(s3, templates, configuration.AllowDelete, configuration.ListRecursive, configuration.BucketMap)).Methods(http.MethodGet)
+	r.PathPrefix("/buckets/").Handler(s3manager.HandleBucketView(s3, templates, configuration.AllowDelete, configuration.ListRecursive, configuration.BucketMap, configuration.CdnMap)).Methods(http.MethodGet)
 	r.Handle("/api/buckets/{bucketGuid}/objects", s3manager.HandleCreateObject(s3, sseType, configuration.BucketMap)).Methods(http.MethodPost)
 	r.Handle("/api/buckets/{bucketGuid}/objects/{objectName:.*}/url", s3manager.HandleGenerateUrl(s3, configuration.BucketMap)).Methods(http.MethodGet)
 	r.Handle("/api/buckets/{bucketGuid}/objects/{objectName:.*}", s3manager.HandleGetObject(s3, configuration.ForceDownload, configuration.BucketMap)).Methods(http.MethodGet)
