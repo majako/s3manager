@@ -25,9 +25,9 @@ spec:
         resources:
           requests:
             cpu: 400m
-            memory: 300Mi
+            memory: 500Mi
           limits:
-            memory: 300Mi
+            memory: 500Mi
 ---
 apiVersion: v1
 kind: Service
@@ -49,6 +49,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300s"
 spec:
   tls:
   - hosts:
