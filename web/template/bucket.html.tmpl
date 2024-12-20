@@ -285,7 +285,7 @@ function handleOpenDownloadLinkModal(objectName) {
 }
 
 async function handleCopyCdnUrl(objectKey) {
-    const cdnUrl = '{{ $.CdnUrl }}' + '/' + objectKey;
+    const cdnUrl = '{{ $.CdnUrl }}' + '/' + encodeURIComponent(objectKey);
     try {
         navigator.clipboard.writeText(cdnUrl);
         alert(cdnUrl + ' copied to clipboard.');
