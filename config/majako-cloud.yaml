@@ -24,10 +24,10 @@ spec:
         - containerPort: 8080
         resources:
           requests:
-            cpu: 400m
-            memory: 1000Mi
+            cpu: 50m
+            memory: 1250Mi
           limits:
-            memory: 1000Mi
+            memory: 1250Mi
 ---
 apiVersion: v1
 kind: Service
